@@ -1,5 +1,6 @@
 package org.gam.dedatebackend.Config;
 
+import org.gam.dedatebackend.Filter.JwtFilter;
 import org.gam.dedatebackend.Service.ProfileDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +16,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -28,6 +30,8 @@ public class SecurityConfig {
 
     @Autowired
     private ProfileDetailService profileDetailService;
+    @Autowired
+    private JwtFilter jwtFilter;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http.cors(Customizer.withDefaults())
@@ -36,7 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/login", "/api/register")
                         .permitAll().anyRequest().authenticated())
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .logout(AbstractHttpConfigurer::disable);
+                .logout(AbstractHttpConfigurer::disable)
+                .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
     @Bean
