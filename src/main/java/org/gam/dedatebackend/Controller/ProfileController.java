@@ -19,4 +19,8 @@ public class ProfileController {
         ProfileResponse profileResponse = profileService.createProfile(profileRequest);
         return profileResponse;
     }
+    @GetMapping("testing")
+    public String testing(){
+        return "testing";
+    }
 }
