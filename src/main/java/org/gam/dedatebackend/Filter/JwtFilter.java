@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
-    private ProfileDetailService profileDetailService;
+    private final ProfileDetailService profileDetailService;
 
     public List<String> list=List.of("/api/login","/api/register");
     @Override
@@ -64,6 +64,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         }
-        filterChain.doFilter(request, response);    
+        filterChain.doFilter(request, response);
     }
 }
