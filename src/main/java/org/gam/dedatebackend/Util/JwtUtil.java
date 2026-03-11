@@ -25,7 +25,7 @@ public class JwtUtil {
     }
 
     public String getToken(UserDetails userDetails){
-        Map<String,Object> claims = new HashMap<>();
+        Map<String,Object> claims = new HashMap<>();//UserDetails → Spring Security object representing the logged-in user.
         return createToke(claims,userDetails.getUsername());
     }
 
