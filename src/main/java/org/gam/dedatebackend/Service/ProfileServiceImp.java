@@ -22,12 +22,23 @@ public class ProfileServiceImp implements ProfileService {
 
     @Override
     public ProfileResponse createProfile(ProfileRequest profileRequest) {
-        UserProfile userProfile=converToProfile(profileRequest);
+        UserProfile userProfile=ConvertToProfile(profileRequest);
         userProfile=userProfileRepo.save(userProfile);
-        return convertToProfileRespo(userProfile);
+        return convertToProfileResp(userProfile);
     }
 
-    private ProfileResponse convertToProfileRespo(UserProfile userProfile) {
+    @Override
+    public ProfileResponse getProfileByEmail(String email) {
+        UserProfile user = userProfileRepo.findByemail(email);
+
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        return convertToProfileResp(user);
+    }
+
+    private ProfileResponse convertToProfileResp(UserProfile userProfile) {
         return ProfileResponse.builder()
                 .Email(userProfile.getEmail())
                 .username(userProfile.getUsername())
@@ -36,7 +47,7 @@ public class ProfileServiceImp implements ProfileService {
                 .build();
     }
 
-    private UserProfile converToProfile(ProfileRequest profileRequest) {
+    private UserProfile ConvertToProfile(ProfileRequest profileRequest) {
         return UserProfile.builder()
                 .email(profileRequest.getEmail())
                 .password(passwordEncoder.encode(profileRequest.getPassword()))
