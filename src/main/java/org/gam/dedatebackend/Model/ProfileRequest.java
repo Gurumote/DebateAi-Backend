@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ProfileRequest {
-
     private String Name;
     private String email;
     private String Password;
