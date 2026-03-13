@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.gam</groupId>
-    <artifactId>Debate-Backend</artifactId>
+    <artifactId>Dedate-Backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Dedate-Backend</name>
     <description>Dedate-Backend</description>
