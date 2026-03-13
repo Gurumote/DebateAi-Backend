@@ -38,6 +38,16 @@ public class ProfileServiceImp implements ProfileService {
         return convertToProfileResp(user);
     }
 
+    @Override
+    public ProfileResponse getProfileById(Long id) {
+        UserProfile user = userProfileRepo.findById(id).get();
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        return convertToProfileResp(user);
+    }
+
     private ProfileResponse convertToProfileResp(UserProfile userProfile) {
         return ProfileResponse.builder()
                 .Email(userProfile.getEmail())
