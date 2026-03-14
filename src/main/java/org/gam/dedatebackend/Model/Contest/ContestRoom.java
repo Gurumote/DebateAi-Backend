@@ -17,13 +17,13 @@ public class ContestRoom {
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long id;
     @Column(nullable = false)
-    private String roomname;
+    private String roomName;
 //    private long hostid;
-    private long Numberofparticipants;
-    @CurrentTimestamp
+    private long NumberOfParticipants;
+//    @CurrentTimestamp
 //    @Column(updatable = false)
 //    private Timestamp createdAt;
 //    @Column
 //    private Timestamp endTime;
-    private String debatetype;
+    private String debateType;
 }
