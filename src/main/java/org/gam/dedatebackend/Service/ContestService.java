@@ -9,6 +9,8 @@ import org.gam.dedatebackend.Repo.UserProfileRepo;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+
 @Service
 @RequiredArgsConstructor
 public class ContestService {
@@ -19,10 +21,12 @@ public class ContestService {
 
         long userid=getuserid(authentication);
         return ContestRoom.builder()
-                .id(userid)
-                .debateType(contestReq.getDebatetype())
-                .NumberOfParticipants(contestReq.getNumberofparticipants())
-                .roomName(contestReq.getRoomname())
+                .hostId(userid)
+                .debateType(contestReq.getDebateType())
+                .NumberOfParticipants(contestReq.getNumberOfParticipants())
+                .roomName(contestReq.getRoomName())
+                .createdAt(new Timestamp(System.currentTimeMillis()))
+                .endTime(contestReq.getEndTime())
                 .build();
     }
     public long getuserid(Authentication authentication) {
