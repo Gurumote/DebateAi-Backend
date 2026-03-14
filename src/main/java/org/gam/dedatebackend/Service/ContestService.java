@@ -20,9 +20,9 @@ public class ContestService {
         long userid=getuserid(authentication);
         return ContestRoom.builder()
                 .id(userid)
-                .debatetype(contestReq.getDebatetype())
-                .Numberofparticipants(contestReq.getNumberofparticipants())
-                .roomname(contestReq.getRoomname())
+                .debateType(contestReq.getDebatetype())
+                .NumberOfParticipants(contestReq.getNumberofparticipants())
+                .roomName(contestReq.getRoomname())
                 .build();
     }
     public long getuserid(Authentication authentication) {
