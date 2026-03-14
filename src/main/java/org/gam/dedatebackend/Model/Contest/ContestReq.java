@@ -3,6 +3,8 @@ package org.gam.dedatebackend.Model.Contest;
 
 import lombok.*;
 
+import java.sql.Timestamp;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -10,7 +12,8 @@ import lombok.*;
 @Getter
 @Setter
 public class ContestReq {
-    String roomname;
-    private long Numberofparticipants;
-    private String debatetype;
+    String roomName;
+    private Long NumberOfParticipants;
+    private String debateType;
+    private Timestamp endTime;
 }

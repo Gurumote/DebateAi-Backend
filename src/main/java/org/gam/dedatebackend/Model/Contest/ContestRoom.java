@@ -18,12 +18,12 @@ public class ContestRoom {
     private Long id;
     @Column(nullable = false)
     private String roomName;
-//    private long hostid;
+    @Column(nullable = false)
+    private long hostId;
     private long NumberOfParticipants;
-//    @CurrentTimestamp
-//    @Column(updatable = false)
-//    private Timestamp createdAt;
-//    @Column
-//    private Timestamp endTime;
+    @CurrentTimestamp
+    @Column(updatable = false)
+    private Timestamp createdAt;
+    private Timestamp endTime;
     private String debateType;
 }

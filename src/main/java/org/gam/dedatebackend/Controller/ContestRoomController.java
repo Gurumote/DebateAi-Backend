@@ -22,6 +22,10 @@ public class ContestRoomController {
     @PostMapping("create-room")
     public ResponseEntity<?> createRoom(@RequestBody ContestReq contestReq, Authentication authentication) {
        ContestRoom contestRoom= contestService.createRoom(contestReq,authentication);
+       if(contestRoom==null){
+           return ResponseEntity.badRequest().body("Error");
+       }
+       contestRepo.save(contestRoom);
        return ResponseEntity.ok().body(contestRoom);
     }
     @GetMapping("roomid/{id}")
