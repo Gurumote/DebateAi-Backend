@@ -22,6 +22,9 @@ public class ProfileServiceImp implements ProfileService {
 
     @Override
     public ProfileResponse createProfile(ProfileRequest profileRequest) {
+        if (userProfileRepo.existsByEmail(profileRequest.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
         UserProfile userProfile=ConvertToProfile(profileRequest);
         userProfile=userProfileRepo.save(userProfile);
         return convertToProfileResp(userProfile);
@@ -40,10 +43,8 @@ public class ProfileServiceImp implements ProfileService {
 
     @Override
     public ProfileResponse getProfileById(Long id) {
-        UserProfile user = userProfileRepo.findById(id).get();
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
+        UserProfile user = userProfileRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         return convertToProfileResp(user);
     }

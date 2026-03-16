@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class ContestService {
                 .roomName(contestReq.getRoomName())
                 .createdAt(new Timestamp(System.currentTimeMillis()))
                 .endTime(contestReq.getEndTime())
+                .list(new ArrayList<>(null))
                 .build();
     }
     public long getuserid(Authentication authentication) {
