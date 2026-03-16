@@ -19,8 +19,9 @@ public class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+    @Column(nullable = false, unique = true)
     private String username;
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
     private String password;
     private boolean isActive;
