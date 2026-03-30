@@ -11,7 +11,7 @@ import java.sql.Timestamp;
 @Builder
 @Getter
 @Setter
-public class ContestReq {
+public class ContestCreationReq {
     String roomName;
     private Long NumberOfParticipants;
     private String debateType;
