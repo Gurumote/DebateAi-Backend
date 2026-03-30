@@ -1,7 +1,7 @@
 package org.gam.dedatebackend.Controller;
 
 import lombok.RequiredArgsConstructor;
-import org.gam.dedatebackend.Model.Contest.ContestReq;
+import org.gam.dedatebackend.Model.Contest.ContestCreationReq;
 import org.gam.dedatebackend.Model.Contest.ContestRoom;
 import org.gam.dedatebackend.Repo.ContestRepo;
 import org.gam.dedatebackend.Service.ContestService;
@@ -19,7 +19,7 @@ public class ContestRoomController {
     private final ContestService contestService;
     private  final ContestRepo contestRepo;
     @PostMapping("create-room")
-    public ResponseEntity<?> createRoom(@RequestBody ContestReq contestReq, Authentication authentication) {
+    public ResponseEntity<?> createRoom(@RequestBody ContestCreationReq contestReq, Authentication authentication) {
        ContestRoom contestRoom= contestService.createRoom(contestReq,authentication);
        if(contestRoom==null){
            return ResponseEntity.badRequest().body("Error");
@@ -28,7 +28,7 @@ public class ContestRoomController {
        return ResponseEntity.ok().body(contestRoom);
     }
     @GetMapping("roomid/{id}")
-    public Optional<ContestRoom> getRoomById(@PathVariable long id) {
+    public Optional<ContestRoom> getRoomById(@PathVariable String id) {
         return contestRepo.findById(id);
     }
 }

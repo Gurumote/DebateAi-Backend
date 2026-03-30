@@ -17,8 +17,7 @@ import java.util.List;
 public class ContestRoom {
 
     @Id
-    @GeneratedValue(strategy =  GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     @Column(nullable = false)
     private String roomName;
     @Column(nullable = false)
