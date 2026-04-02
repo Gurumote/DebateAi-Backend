@@ -19,7 +19,7 @@ import java.sql.Timestamp;
 public class ContestJoinReqService {
     private final ContestRepo contestRepo;
     private final UserProfileRepo userProfileRepo;
-    public RoomParticipant createJoinReq(ContestJoinReq contestJoinReq, Authentication authentication) {
+    public RoomParticipant createJoinReq(@RequestBody ContestJoinReq contestJoinReq, Authentication authentication) {
         String roomId = contestJoinReq.getRoomId();
         System.out.println("ROOM ID: " + contestJoinReq.getRoomId());
         if (roomId == null || roomId.isBlank()) {
@@ -31,13 +31,20 @@ public class ContestJoinReqService {
         Long userId = getUserid(authentication);
 
         return RoomParticipant.builder()
-                .roomId(room.getId())
+                .contestRoom(getRoomId(contestJoinReq.getRoomId()))
                 .hostId(room.getHostId())
                 .userId(userId)
                 .joinedAt(new Timestamp(System.currentTimeMillis()))
                 .leftAt(null)
                 .build();
     }
+
+    private ContestRoom getRoomId(String roomId) {
+        ContestRoom room= contestRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        return room;
+    }
+
     public long getUserid(Authentication authentication) {
         String email = authentication.getName();
         UserProfile user = userProfileRepo.findByemail(email);
