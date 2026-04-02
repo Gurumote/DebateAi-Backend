@@ -32,6 +32,7 @@ public class ContestService {
                 .createdAt(new Timestamp(System.currentTimeMillis()))
                 .endTime(contestReq.getEndTime())
                 .list(new ArrayList<>())
+                .participants(new ArrayList<>())
                 .build();
     }
     public long getUserid(Authentication authentication) {
