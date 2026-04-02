@@ -30,5 +30,12 @@ public class ContestRoom {
     private String debateType;
     @JsonManagedReference
     @OneToMany(mappedBy = "contestRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default//it preserves the actual state of the field when it was build when we do not use Builder then messages =null when we use message=[]
     private List<MessagesOfRoom> list=new ArrayList<>();
+
+
+    @OneToMany(mappedBy = "contestRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference(value = "room-participants")
+    @Builder.Default
+    private List<RoomParticipant> participants = new ArrayList<>();
 }
