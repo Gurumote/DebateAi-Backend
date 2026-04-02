@@ -1,9 +1,7 @@
 package org.gam.dedatebackend.Model.Contest;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
@@ -19,9 +17,12 @@ public class RoomParticipant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String roomId;
     private Long hostId;
     private Long userId;
     private Timestamp joinedAt;
     private Timestamp leftAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = false)
+    @JsonBackReference(value = "room-participants")
+    private ContestRoom contestRoom;
 }
