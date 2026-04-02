@@ -25,6 +25,9 @@ public class ProfileServiceImp implements ProfileService {
         if (userProfileRepo.existsByEmail(profileRequest.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
+        if(userProfileRepo.existsByUsername(profileRequest.getName())){
+            throw new RuntimeException("Username already exists");
+        }
         UserProfile userProfile=ConvertToProfile(profileRequest);
         userProfile=userProfileRepo.save(userProfile);
         return convertToProfileResp(userProfile);
@@ -32,6 +35,7 @@ public class ProfileServiceImp implements ProfileService {
 
     @Override
     public ProfileResponse getProfileByEmail(String email) {
+
         UserProfile user = userProfileRepo.findByemail(email);
 
         if (user == null) {
