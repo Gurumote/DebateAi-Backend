@@ -1,7 +1,7 @@
 package org.gam.dedatebackend.Controller;
 
 
-import org.gam.dedatebackend.Model.ProfileRequest;
+import org.gam.dedatebackend.Model.Request.ProfileRequest;
 import org.gam.dedatebackend.Model.ProfileResponse;
 import org.gam.dedatebackend.Service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
