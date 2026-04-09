@@ -2,7 +2,7 @@ package org.gam.dedatebackend.Controller;
 
 
 import lombok.RequiredArgsConstructor;
-import org.gam.dedatebackend.Model.AuthRequest;
+import org.gam.dedatebackend.Model.Request.AuthRequest;
 import org.gam.dedatebackend.Model.AuthResponse;
 import org.gam.dedatebackend.Service.ProfileDetailService;
 import org.gam.dedatebackend.Util.JwtUtil;
