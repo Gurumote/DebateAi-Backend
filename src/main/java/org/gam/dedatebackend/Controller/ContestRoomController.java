@@ -27,7 +27,7 @@ public class ContestRoomController {
        contestRepo.save(contestRoom);
        return ResponseEntity.ok().body(contestRoom);
     }
-    @GetMapping("roomid/{id}")
+    @GetMapping("roomId/{id}")
     public Optional<ContestRoom> getRoomById(@PathVariable String id) {
         return contestRepo.findById(id);
     }
