@@ -47,4 +47,9 @@ public class ContestService {
         }
         return sb.toString();
     }
+    public ContestRoom getRoomId(String id){
+
+       ContestRoom contestRoom = contestRepo.findById(id).get();
+        return contestRoom;
+    }
 }
