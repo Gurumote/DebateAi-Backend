@@ -1,4 +1,4 @@
-package org.gam.dedatebackend.Model;
+package org.gam.dedatebackend.Model.Request;
 
 
 import lombok.*;
