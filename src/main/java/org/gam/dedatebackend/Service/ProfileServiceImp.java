@@ -1,6 +1,6 @@
 package org.gam.dedatebackend.Service;
 
-import org.gam.dedatebackend.Model.ProfileRequest;
+import org.gam.dedatebackend.Model.Request.ProfileRequest;
 import org.gam.dedatebackend.Model.ProfileResponse;
 import org.gam.dedatebackend.Model.UserProfile;
 import org.gam.dedatebackend.Repo.UserProfileRepo;
