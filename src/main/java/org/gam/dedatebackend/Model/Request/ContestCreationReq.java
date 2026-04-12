@@ -1,4 +1,4 @@
-package org.gam.dedatebackend.Model.Contest;
+package org.gam.dedatebackend.Model.Request;
 
 
 import lombok.*;
