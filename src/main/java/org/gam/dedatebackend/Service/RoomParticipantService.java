@@ -2,7 +2,6 @@ package org.gam.dedatebackend.Service;
 
 
 import lombok.RequiredArgsConstructor;
-import org.gam.dedatebackend.Model.Contest.ContestJoinReq;
 import org.gam.dedatebackend.Model.Contest.ContestRoom;
 import org.gam.dedatebackend.Model.Contest.RoomParticipant;
 import org.gam.dedatebackend.Model.UserProfile;
@@ -10,18 +9,16 @@ import org.gam.dedatebackend.Repo.ContestRepo;
 import org.gam.dedatebackend.Repo.UserProfileRepo;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.sql.Timestamp;
 
 @Service
 @RequiredArgsConstructor
-public class ContestJoinReqService {
+public class RoomParticipantService {
     private final ContestRepo contestRepo;
     private final UserProfileRepo userProfileRepo;
-    public RoomParticipant createJoinReq(@RequestBody ContestJoinReq contestJoinReq, Authentication authentication) {
-        String roomId = contestJoinReq.getRoomId();
-        System.out.println("ROOM ID: " + contestJoinReq.getRoomId());
+    public RoomParticipant createJoinReq(String roomId, Authentication authentication) {
+
         if (roomId == null || roomId.isBlank()) {
             throw new RuntimeException("Room ID is required");
         }
@@ -31,7 +28,22 @@ public class ContestJoinReqService {
         Long userId = getUserid(authentication);
 
         return RoomParticipant.builder()
-                .contestRoom(getRoomId(contestJoinReq.getRoomId()))
+                .contestRoom(getRoomId(roomId))
+                .hostId(room.getHostId())
+                .userId(userId)
+                .joinedAt(new Timestamp(System.currentTimeMillis()))
+                .leftAt(null)
+                .build();
+    }
+    public RoomParticipant createJoinReqByUserId(String roomId, Long userId) {
+
+        if (roomId == null || roomId.isBlank()) {
+            throw new RuntimeException("Room ID is required");
+        }
+        ContestRoom room = contestRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        return RoomParticipant.builder()
+                .contestRoom(getRoomId(roomId))
                 .hostId(room.getHostId())
                 .userId(userId)
                 .joinedAt(new Timestamp(System.currentTimeMillis()))
