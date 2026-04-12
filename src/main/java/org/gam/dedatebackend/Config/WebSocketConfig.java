@@ -14,16 +14,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         //client to direct server
-        registry.setApplicationDestinationPrefixes("/app");
+        registry.setApplicationDestinationPrefixes("/api");//all the request coming from the api goes to controller not to handler
+        //simple Broker
+        registry.enableSimpleBroker("/broker1","/broker2");
+
 
         //client to RabbitMQ broker
-        registry.enableStompBrokerRelay("/topic", "/queue")
-                .setRelayHost("localhost")
-                .setRelayPort(61613)
-                .setClientLogin("guest")
-                .setClientPasscode("guest")
-                .setSystemLogin("guest")
-                .setSystemPasscode("guest");
+//        registry.enableStompBrokerRelay("/topic", "/queue")
+//                .setRelayHost("localhost")
+//                .setRelayPort(61613)
+//                .setClientLogin("guest")
+//                .setClientPasscode("guest")
+//                .setSystemLogin("guest")
+//                .setSystemPasscode("guest");
     }
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
