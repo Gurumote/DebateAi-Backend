@@ -3,6 +3,7 @@ package org.gam.dedatebackend.Model.Contest;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.gam.dedatebackend.Enum.DebateType;
 import org.hibernate.annotations.CurrentTimestamp;
 
 import java.sql.Timestamp;
@@ -27,13 +28,11 @@ public class ContestRoom {
     @Column(updatable = false)
     private Timestamp createdAt;
     private Timestamp endTime;
-    private String debateType;
+    private DebateType debateType;
     @JsonManagedReference
     @OneToMany(mappedBy = "contestRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default//it preserves the actual state of the field when it was build when we do not use Builder then messages =null when we use message=[]
     private List<MessagesOfRoom> list=new ArrayList<>();
-
-
     @OneToMany(mappedBy = "contestRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "room-participants")
     @Builder.Default
