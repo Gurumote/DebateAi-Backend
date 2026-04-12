@@ -25,10 +25,10 @@ public class UserProfile {
     private String email;
     private String password;
     private boolean isActive;
-    private String verifyotp;
-    private String resetotp;
-    private long verifyotpExpiration;
-    private long resetotpExpiration;
+    private String verifyOtp;
+    private String resetOtp;
+    private long verifyOtpExpiration;
+    private long resetOtpExpiration;
 
 
     @CurrentTimestamp

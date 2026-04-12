@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/User")
+@RequestMapping("api/profile")
 public class UserController {
 
     @Autowired
@@ -21,6 +21,6 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
-        return ResponseEntity.ok(profileService.getProfileByEmail(email));
+        return ResponseEntity.ok(profileService.    getProfileByEmail(email));
     }
 }
