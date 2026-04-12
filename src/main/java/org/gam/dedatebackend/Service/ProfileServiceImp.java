@@ -68,10 +68,10 @@ public class ProfileServiceImp implements ProfileService {
                 .password(passwordEncoder.encode(profileRequest.getPassword()))
                 .username(profileRequest.getName())
                 .isActive(true)
-                .resetotp(null)
-                .verifyotp(null)
-                .resetotpExpiration(0L)
-                .verifyotpExpiration(0L)
+                .resetOtp(null)
+                .verifyOtp(null)
+                .resetOtpExpiration(0L)
+                .verifyOtpExpiration(0L)
                 .build();
     }
 }
