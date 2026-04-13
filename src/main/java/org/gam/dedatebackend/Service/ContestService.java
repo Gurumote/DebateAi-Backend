@@ -32,10 +32,12 @@ public class ContestService {
     private final RoomParticipantService roomParticipantService;
     private final RoomParticipantRepo roomParticipantRepo;
     private final WebSocketRegistry webSocketRegistry;
-    public ContestRoom createRoom(ContestCreationReq contestReq, Authentication authentication) {
 
+    //First it creates Room and Add Host As Participant
+    public ContestRoom createRoom(ContestCreationReq contestReq, Authentication authentication) {
+        System.out.println("CONTROLLER AUTH = " + authentication);
         long userid=getUserid(authentication);
-        ContestRoom room= ContestRoom.builder()
+        ContestRoom room= ContestRoom.builder()//creating new Room
                 .id(genrateString())
                 .hostId(userid)
                 .debateType(DebateType.valueOf(contestReq.getDebateType()))
@@ -47,11 +49,12 @@ public class ContestService {
                 .participants(new ArrayList<>())
                 .build();
          contestRepo.save(room);
-        RoomParticipant participant=roomParticipantService.createJoinReq(room.getId(),authentication);
+        RoomParticipant participant=roomParticipantService.createJoinReq(room.getId(),authentication);//adding Host in the RoomParticipant
         roomParticipantRepo.save(participant);
         return room;
     }
 
+    //First it checks the user is the room or not if not then it adds the User into Room
     public void joinRoom(String roomId, String sessionId, Long userId) {
         ContestRoom room=contestRepo.findById(roomId).orElseThrow(()->new RuntimeException("Room Not Found"));
         boolean alreadyJoined=roomParticipantRepo.existsByContestRoom_IdAndUserIdAndLeftAtIsNull(roomId,userId);
@@ -64,9 +67,7 @@ public class ContestService {
         contestRepo.save(room);
     }
 
-
-
-
+    //First we check the removal request from the Host then we remove user from the room
     public void removeParticipationByHost(Long hostId,Long userId,String roomId){
         ContestRoom room = contestRepo.findById(roomId).orElseThrow(() -> new RuntimeException("Room not found"));
         if(room.getHostId()!=hostId){
@@ -84,6 +85,7 @@ public class ContestService {
         contestRepo.save(room);
     }
 
+    //In this Host ends the session for everyone first it removes all the user from room then it set end time of room
     @Transactional
     public void handleDisconnect(String sessionId,Long hostId){
         SessionInfo info = webSocketRegistry.closeSession(sessionId);
@@ -114,6 +116,7 @@ public class ContestService {
         contestRepo.save(room);
     }
 
+    //User room lives session By itself
     @Transactional
     public void leaveRoom(Long userId, String roomId) {
         ContestRoom room = contestRepo.findById(roomId)
@@ -135,17 +138,23 @@ public class ContestService {
         contestRepo.save(room);
 
     }
-
-
-
-
-
-
-
-
     public long getUserid(Authentication authentication) {
+        System.out.println("AUTH OBJECT = " + authentication);
+
+        if (authentication == null) {
+            throw new RuntimeException("Authentication is null");
+        }
+
         String email = authentication.getName();
+        System.out.println("EMAIL FROM AUTH = " + email);
+
         UserProfile user = userProfileRepo.findByemail(email);
+        System.out.println("USER FROM DB = " + user);
+
+        if (user == null) {
+            throw new RuntimeException("User not found for email: " + email);
+        }
+
         return user.getId();
     }
     public String genrateString(){

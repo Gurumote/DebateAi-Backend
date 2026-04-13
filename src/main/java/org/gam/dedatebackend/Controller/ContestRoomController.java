@@ -12,6 +12,7 @@ import org.gam.dedatebackend.Service.ContestService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.broker.SimpleBrokerMessageHandler;
 import org.springframework.security.core.Authentication;
@@ -30,8 +31,10 @@ public class ContestRoomController {
     private final RoomParticipantRepo roomParticipantRepo;
     private final WebSocketRegistry webSocketRegistry;
     private final SimpMessagingTemplate simpMessagingTemplate;
+
+
     @MessageMapping("room/create-room")
-    public ResponseEntity<?> createRoom(@RequestBody ContestCreationReq contestReq, Authentication authentication,String sessionId) {
+    public ResponseEntity<?> createRoom(@Payload ContestCreationReq contestReq, Authentication authentication, @Header("simpSessionId") String sessionId) {
        ContestRoom contestRoom= contestService.createRoom(contestReq,authentication);
        if(contestRoom==null){
            return ResponseEntity.badRequest().body("Error");
@@ -42,32 +45,37 @@ public class ContestRoomController {
     }
     @MessageMapping("room/join/{id}")
     public void joinRoom(@PathVariable String roomId, @Header("simpleSessionId")String sessionId,Authentication authentication ){
-        Long userId=getUserId(authentication);
+        Long userId=getUserid(authentication);
         contestService.joinRoom(roomId,sessionId,userId);
             webSocketRegistry.connectSession(sessionId,roomId,contestService.getUserid(authentication));
     }
 
+    @MessageMapping("room/leaveRoom/{id}")
+    public void leaveRoom(@PathVariable String roomId, Long userId){
+        contestService.leaveRoom(userId,roomId);
+    }
 
+    @MessageMapping("room/removeUser")
+    public void removeUser(Long userId,Long hostId,String roomId){
+        contestService.removeParticipationByHost(hostId,userId,roomId);
+    }
+    public long getUserid(Authentication authentication) {
+        System.out.println("AUTH OBJECT = " + authentication);
 
+        if (authentication == null) {
+            throw new RuntimeException("Authentication is null");
+        }
 
-
-//    private void publishRoomEvent(String roomId, RoomEvent event) {
-//        simpMessagingTemplate.convertAndSend("/topic/room/" + roomId, event);
-//    }
-
-
-
-
-
-
-    public long getUserId(Authentication authentication) {
         String email = authentication.getName();
+        System.out.println("EMAIL FROM AUTH = " + email);
+
         UserProfile user = userProfileRepo.findByemail(email);
+        System.out.println("USER FROM DB = " + user);
+
+        if (user == null) {
+            throw new RuntimeException("User not found for email: " + email);
+        }
+
         return user.getId();
     }
-//    @GetMapping("roomId/{id}")
-//    public Optional<ContestRoom> getRoomById(@PathVariable String id) {
-//        return contestRepo.findById(id);
-//    }
-
 }
