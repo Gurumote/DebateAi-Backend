@@ -33,7 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         String jwt=null;
         String email=null;
-        //check cookies in the Header
+        //checking cookies in the Header
         final String authorization=request.getHeader("Authorization");
         if(authorization!=null && authorization.startsWith("Bearer ")){
             jwt=authorization.substring(7);
