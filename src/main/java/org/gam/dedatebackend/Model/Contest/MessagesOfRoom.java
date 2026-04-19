@@ -18,7 +18,7 @@ public class MessagesOfRoom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    private String Sender;
+    private Long Sender;
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     private LocalDateTime localDateTime;
