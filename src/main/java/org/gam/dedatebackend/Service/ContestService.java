@@ -34,14 +34,21 @@ public class ContestService {
     private final WebSocketRegistry webSocketRegistry;
 
     //First it creates Room and Add Host As Participant
+    @Transactional
     public ContestRoom createRoom(ContestCreationReq contestReq, Authentication authentication) {
-        System.out.println("CONTROLLER AUTH = " + authentication);
         long userid=getUserid(authentication);
+        DebateType type=null;
+        try {
+            type = DebateType.valueOf(contestReq.getDebateType());
+        } catch (Exception e) {
+            System.out.println("ERROR: Enum conversion failed for: " + contestReq.getDebateType());
+            throw e;
+        }
         ContestRoom room= ContestRoom.builder()//creating new Room
                 .id(genrateString())
                 .hostId(userid)
                 .debateType(DebateType.valueOf(contestReq.getDebateType()))
-                .NumberOfParticipants(contestReq.getNumberOfParticipants())
+                .NumberOfParticipants(1)
                 .roomName(contestReq.getRoomName())
                 .createdAt(new Timestamp(System.currentTimeMillis()))
                 .endTime(contestReq.getEndTime())
@@ -55,6 +62,7 @@ public class ContestService {
     }
 
     //First it checks the user is the room or not if not then it adds the User into Room
+    @Transactional
     public void joinRoom(String roomId, String sessionId, Long userId) {
         ContestRoom room=contestRepo.findById(roomId).orElseThrow(()->new RuntimeException("Room Not Found"));
         boolean alreadyJoined=roomParticipantRepo.existsByContestRoom_IdAndUserIdAndLeftAtIsNull(roomId,userId);
@@ -68,6 +76,7 @@ public class ContestService {
     }
 
     //First we check the removal request from the Host then we remove user from the room
+    @Transactional
     public void removeParticipationByHost(Long hostId,Long userId,String roomId){
         ContestRoom room = contestRepo.findById(roomId).orElseThrow(() -> new RuntimeException("Room not found"));
         if(room.getHostId()!=hostId){
