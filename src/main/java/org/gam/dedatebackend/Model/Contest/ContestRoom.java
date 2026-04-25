@@ -4,29 +4,32 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.gam.dedatebackend.Enum.DebateType;
+import org.gam.dedatebackend.Model.UserProfile;
 import org.hibernate.annotations.CurrentTimestamp;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter @Setter
+@Data
 @Builder
 public class ContestRoom {
-
     @Id
     private String id;
     @Column(nullable = false)
     private String roomName;
-    @Column(nullable = false)
-    private long hostId;
-    private long NumberOfParticipants;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_id", nullable = false)
+    private UserProfile host;
+    private long teamSize;//important factor
+    private long totalParticipants;
     @CurrentTimestamp
     @Column(updatable = false)
-    private Timestamp createdAt;
+    private Instant createdAt;
     private Timestamp endTime;
     private DebateType debateType;
     @JsonManagedReference
