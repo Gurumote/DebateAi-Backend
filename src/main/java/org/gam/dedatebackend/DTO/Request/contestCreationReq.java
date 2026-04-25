@@ -1,4 +1,4 @@
-package org.gam.dedatebackend.Model.Request;
+package org.gam.dedatebackend.DTO.Request;
 
 
 import lombok.*;
@@ -11,9 +11,9 @@ import java.sql.Timestamp;
 @Builder
 @Getter
 @Setter
-public class ContestCreationReq {
+public class contestCreationReq {
     String roomName;
-    private Long NumberOfParticipants;
+    private Long teamSize;
     private String debateType;
     private Timestamp endTime;
 }
