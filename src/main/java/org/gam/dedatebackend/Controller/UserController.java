@@ -1,10 +1,8 @@
 package org.gam.dedatebackend.Controller;
 
 
-import org.gam.dedatebackend.Model.ProfileResponse;
-import org.gam.dedatebackend.Model.UserProfile;
+import org.gam.dedatebackend.DTO.Response.ProfileResponse;
 import org.gam.dedatebackend.Service.ProfileService;
-import org.gam.dedatebackend.Service.UserProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

@@ -15,7 +15,6 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserProfile {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -29,8 +28,6 @@ public class UserProfile {
     private String resetOtp;
     private long verifyOtpExpiration;
     private long resetOtpExpiration;
-
-
     @CurrentTimestamp
     @Column(updatable = false)
     private Timestamp createdAt;
