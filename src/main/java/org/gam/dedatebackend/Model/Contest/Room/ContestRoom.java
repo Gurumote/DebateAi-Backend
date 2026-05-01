@@ -1,13 +1,15 @@
-package org.gam.dedatebackend.Model.Contest;
+package org.gam.dedatebackend.Model.Contest.Room;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.gam.dedatebackend.Enum.DebateType;
+import org.gam.dedatebackend.Enum.roomStatus;
+import org.gam.dedatebackend.Model.Contest.RoomMessages.MessagesOfRoom;
+import org.gam.dedatebackend.Model.Contest.Participant.RoomParticipant;
 import org.gam.dedatebackend.Model.UserProfile;
 import org.hibernate.annotations.CurrentTimestamp;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,13 +27,17 @@ public class ContestRoom {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false)
     private UserProfile host;
-    private long teamSize;//important factor
-    private long totalParticipants;
+    private long teamSize;
+    private long totalParticipantsSize;
+    @Column(name="current_Participants_size")
+    private long currentParticipantsSize=0;
     @CurrentTimestamp
     @Column(updatable = false)
     private Instant createdAt;
-    private Timestamp endTime;
+    private Instant setLiveAt;
+    private Instant endTime;
     private DebateType debateType;
+    private roomStatus roomStatus;
     @JsonManagedReference
     @OneToMany(mappedBy = "contestRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default//it preserves the actual state of the field when it was build when we do not use Builder then messages =null when we use message=[]
