@@ -1,70 +1,232 @@
 package org.gam.dedatebackend.Controller;
 
 import lombok.RequiredArgsConstructor;
-import org.gam.dedatebackend.Model.Request.ContestCreationReq;
-import org.gam.dedatebackend.Model.Contest.ContestRoom;
+import org.gam.dedatebackend.DTO.Request.MessageRequest;
+import org.gam.dedatebackend.DTO.Request.contestCreationReq;
+import org.gam.dedatebackend.Enum.Team;
+import org.gam.dedatebackend.Enum.roomStatus;
+import org.gam.dedatebackend.Model.Contest.Room.ContestRoom;
+import org.gam.dedatebackend.Model.Contest.Participant.RoomParticipant;
 import org.gam.dedatebackend.Model.UserProfile;
+import org.gam.dedatebackend.Repo.ContestRepo;
+import org.gam.dedatebackend.Repo.RoomParticipantRepo;
 import org.gam.dedatebackend.Repo.UserProfileRepo;
-import org.gam.dedatebackend.Service.Componet.WebSocketRegistry;
-import org.gam.dedatebackend.Service.ContestService;
+import org.gam.dedatebackend.Service.ContestRoomService;
+import org.gam.dedatebackend.Service.livekitService;
+import org.gam.dedatebackend.Service.participantService;
+import org.gam.dedatebackend.Util.LiveKitUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import java.time.Instant;
+import java.util.List;
 
-@Controller
+
+@RestController
+@RequestMapping("api/room")
 @RequiredArgsConstructor
 public class ContestRoomController {
-
-    private final ContestService contestService;
+    private final ContestRoomService contestRoomService;
+    private final LiveKitUtil liveKitUtil;
+    private final ContestRepo  contestRepo;
     private final UserProfileRepo userProfileRepo;
-    private final WebSocketRegistry webSocketRegistry;
+    private final livekitService livekitService;
+    private final participantService participantService;
+    private final RoomParticipantRepo participantRepo;
 
-    @MessageMapping("room/create-room")
-    public ResponseEntity<?> createRoom(@Payload ContestCreationReq contestReq, Authentication authentication, @Header("simpSessionId") String sessionId) {
-        try {
-            ContestRoom contestRoom = contestService.createRoom(contestReq, authentication);
-            webSocketRegistry.connectSession(sessionId, contestRoom.getId(), contestRoom.getHostId());
-            return ResponseEntity.ok().body(contestRoom);
-        } catch (Exception e) {
-            System.err.println("Error creating room: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Could not create room: " + e.getMessage());
+    @PostMapping("/createRoomAndJoin")
+    public String createRoomAndJoin(@RequestBody contestCreationReq contestCreationReq, Authentication authentication){
+        return contestRoomService.createRoomAndGenerateTokenOfHost(contestCreationReq, authentication);
+    }
+    @PostMapping("/createRoom")
+    public String createRoom(@RequestBody contestCreationReq contestCreationReq, Authentication authentication){
+        return contestRoomService.createRoom(contestCreationReq, authentication);
+    }
+        @PostMapping("/{roomId}/activateRoom")
+        public ResponseEntity<String> activateRoom(@PathVariable String roomId,Authentication authentication){
+            ContestRoom room=contestRepo.findById(roomId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+            UserProfile profile=getUser(authentication);
+            if(profile.getId()!=room.getHost().getId()){
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            }
+            if (room.getRoomStatus() != roomStatus.INITIALIZED) {
+                return ResponseEntity.badRequest().body("Room cannot be activated");
+            }
+            if(room.getSetLiveAt()!=null){
+                return ResponseEntity.ok("Room already activated");
+            }
+            try {
+                livekitService.createLiveKitRoom(room);
+                room.setSetLiveAt(Instant.now());
+                room.setRoomStatus(roomStatus.LIVE);
+                contestRepo.save(room);
+            } catch (Exception e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "LiveKit failed");
+            }
+            return ResponseEntity.ok("Room activated");
         }
+    @PostMapping("/{roomId}/token")
+    public ResponseEntity<String> getToken(@PathVariable String roomId, Authentication authentication,@RequestParam Team team) {
+        UserProfile user =getUser(authentication);
+        String userName=user.getUsername();
+        ContestRoom room = contestRepo.findById(roomId).orElseThrow(() -> new RuntimeException("Room not found"));
+        if(room.getSetLiveAt()==null){
+            if(room.getHost().getId()==user.getId()){
+                room.setSetLiveAt(Instant.now());
+                livekitService.createLiveKitRoom(room);
+                room.setCurrentParticipantsSize(1);
+                contestRepo.save(room);
+                RoomParticipant roomParticipant=participantService.addParticipant(room,authentication,Team.HOST);
+                String token = liveKitUtil.generateToken(room, userName,Team.HOST);
+                return ResponseEntity.ok(token);
+            }else{
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room is not Started yet");
+            }
+        }
+        long redCount = participantRepo.countByContestRoomAndTeam(room, Team.RED);
+        long blueCount = participantRepo.countByContestRoomAndTeam(room, Team.BLUE);
+        long maxSize = room.getTeamSize();
+        Team finalTeam;
+        if (team == Team.RED) {
+            if (redCount < maxSize) {
+                finalTeam = Team.RED;
+            } else if (blueCount < maxSize) {
+                finalTeam = Team.BLUE;
+            } else {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Room is full");
+            }
+        } else {
+            if (blueCount < maxSize) {
+                finalTeam = Team.BLUE;
+            } else if (redCount < maxSize) {
+                finalTeam = Team.RED;
+            } else {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Room is full");
+            }
+        }
+        long currentParticipant=room.getCurrentParticipantsSize();
+        if(currentParticipant>= room.getTotalParticipantsSize()){
+            throw new ResponseStatusException(HttpStatus.CONFLICT,"Room is Full You are not Allowed to Enter");
+        }
+        Instant endTime=room.getEndTime();
+        Instant time=Instant.now();
+        if (endTime.isAfter(time)) {
+            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_IdAndLeftAtIsNull(room.getId(), user.getId());
+            if (alreadyActive) {
+                RoomParticipant participant=participantRepo.findByUser_Id(user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+                participant.setJoinedAt(Instant.now());
+                participant.setLeftAt(null);
+                participant.setTeam(finalTeam);
+                participantRepo.save(participant);
+            }else{
+                participantService.addParticipant(room, authentication, finalTeam);
+            }
+            String token = liveKitUtil.generateToken(room, userName, finalTeam);
+            return ResponseEntity.ok(token);
+        }else{
+            livekitService.deleteRoom(room,authentication);
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Room has already ended");
     }
-    @MessageMapping("room/join/{id}")
-    public void joinRoom(@PathVariable String roomId, @Header("simpleSessionId")String sessionId,Authentication authentication ){
-        Long userId=getUserid(authentication);
-        contestService.joinRoom(roomId,sessionId,userId);
-        webSocketRegistry.connectSession(sessionId,roomId,contestService.getUserid(authentication));
+    @GetMapping("/{roomId}")
+    public ResponseEntity<ContestRoom> getRoom(@PathVariable String roomId) {
+        return ResponseEntity.ok(
+                contestRepo.findById(roomId).orElseThrow(() -> new RuntimeException("Room not found"))
+        );
     }
-
-    @MessageMapping("room/leaveRoom/{id}")
-    public void leaveRoom(@PathVariable String roomId, Long userId){
-        contestService.leaveRoom(userId,roomId);
+    @PostMapping("/{roomId}/tokenForAuidence")
+    public ResponseEntity<String> getTokenForAudience(@PathVariable String roomId, Authentication authentication) {
+        UserProfile user =getUser(authentication);
+        String userName=user.getUsername();
+        ContestRoom room = contestRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+        Instant endTime=room.getEndTime();
+        Instant time=Instant.now();
+        if (endTime.isAfter(time)) {
+            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_IdAndLeftAtIsNull(room.getId(), user.getId());
+            if (alreadyActive) {
+                RoomParticipant participant=participantRepo.findByUser_Id(user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+                participant.setJoinedAt(Instant.now());
+                participant.setLeftAt(null);
+                participant.setTeam(Team.AUDIENCE);
+                participantRepo.save(participant);
+            }else{
+                participantService.addParticipant(room, authentication, Team.AUDIENCE);
+            }
+            String token = liveKitUtil.generateTokenForAudience(room, userName,Team.AUDIENCE);
+            return ResponseEntity.ok(token);
+        }else{
+            livekitService.deleteRoom(room,authentication);
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Room has already ended");
     }
-
-    @MessageMapping("room/removeUser")
-    public void removeUser(Long userId,Long hostId,String roomId){
-        contestService.removeParticipationByHost(hostId,userId,roomId);
+    @PostMapping("{roomId}/{participantId}/removeParticipant")
+    public ResponseEntity<String> removeParticipant(@PathVariable String roomId,@PathVariable String participantId, Authentication authentication) {
+        livekitService.removeParticipant(roomId,participantId,authentication);
+        return ResponseEntity.ok("Participant has been removed");
     }
-    public long getUserid(Authentication authentication) {
+    @PostMapping("/{roomId}/delete")
+    public ResponseEntity<String> deleteRoom(@PathVariable String roomId, Authentication authentication){
+        UserProfile user =getUser(authentication);
+        ContestRoom room = contestRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+        if(user.getId()!=room.getHost().getId()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("U fucker u are not allowed to delete this room");
+        }
+        livekitService.deleteRoom(room,authentication);
+        return  ResponseEntity.ok("Room has been deleted");
+    }
+    @PostMapping("/{roomId}/chat")
+    public ResponseEntity<?> sendMessage(@RequestBody MessageRequest messageRequest,Authentication authentication){
+        livekitService.sendChatMessage(messageRequest,authentication);
+        return ResponseEntity.ok().build();
+    }
+    @GetMapping("/allRooms")
+    public List<ContestRoom> getAllRooms(){
+        return contestRepo.findInitializedOrLiveRooms();
+    }
+    @GetMapping("/userInitlizedRoom")
+    public List<ContestRoom> getUserRooms(Authentication authentication){
+        UserProfile user =getUser(authentication);
+        return contestRepo.findByRoomStatusAndHost_Id(roomStatus.INITIALIZED,user.getId());
+    }
+    @PostMapping("/{roomId}/leave")
+    public ResponseEntity<String> leaveRoom(@PathVariable String roomId, Authentication authentication) {
+        UserProfile user = getUser(authentication);
+        ContestRoom room = contestRepo.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+        long currentParticipant=room.getCurrentParticipantsSize();
+        room.setCurrentParticipantsSize(currentParticipant>0?currentParticipant-1:0);
+        List<RoomParticipant> participant = participantRepo.findByUserAndContestRoom(user, room);
+        for(RoomParticipant p:participant){
+            p.setLeftAt(Instant.now());
+        }
+        participantRepo.saveAll(participant);
+        // HOST LEAVES
+        if (user.getId()==room.getHost().getId()) {
+            List<RoomParticipant> remaining =participantRepo.findByContestRoom_IdAndLeftAtIsNull(roomId);
+            if (remaining.isEmpty()) {
+                room.setEndTime(Instant.now());
+                contestRepo.save(room);
+                return ResponseEntity.ok("Room ended (no participants left)");
+            } else {
+                RoomParticipant newHost = remaining.getFirst();
+                room.setHost(newHost.getUser());
+                contestRepo.save(room);
+                return ResponseEntity.ok("Room ended (host left)");
+            }
+        }
+        contestRepo.save(room);
+        return ResponseEntity.ok("Left room successfully");
+    }
+    private UserProfile getUser(Authentication authentication) {
         if (authentication == null) {
-            throw new RuntimeException("Authentication is null");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authentication");
         }
-
-        String email = authentication.getName();
-        System.out.println("EMAIL FROM AUTH = " + email);
-
-        UserProfile user = userProfileRepo.findByemail(email);
-        System.out.println("USER FROM DB = " + user);
-
-        if (user == null) {
-            throw new RuntimeException("User not found for email: " + email);
-        }
-
-        return user.getId();
+        String username = authentication.getName(); // safest way
+        return userProfileRepo.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
     }
 }

@@ -36,7 +36,9 @@ public class ContestRoom {
     private Instant createdAt;
     private Instant setLiveAt;
     private Instant endTime;
+    @Enumerated(EnumType.STRING)
     private DebateType debateType;
+    @Enumerated(EnumType.STRING)
     private roomStatus roomStatus;
     @JsonManagedReference
     @OneToMany(mappedBy = "contestRoom", cascade = CascadeType.ALL, orphanRemoval = true)
