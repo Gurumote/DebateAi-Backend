@@ -1,4 +1,4 @@
-package org.gam.dedatebackend.Model.Request;
+package org.gam.dedatebackend.DTO.Request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,5 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class MessageRequest {
     private String roomId;
-    private String Sender;
     private String content;
-    private LocalDateTime localDateTime;
 }

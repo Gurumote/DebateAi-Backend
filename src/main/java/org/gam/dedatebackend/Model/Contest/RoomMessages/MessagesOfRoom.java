@@ -1,15 +1,14 @@
-package org.gam.dedatebackend.Model.Contest;
+package org.gam.dedatebackend.Model.Contest.RoomMessages;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.gam.dedatebackend.Model.Contest.Room.ContestRoom;
+import org.gam.dedatebackend.Model.UserProfile;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -18,10 +17,12 @@ public class MessagesOfRoom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    private Long Sender;
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserProfile user;
+    @Column(nullable = false, columnDefinition = "TEXT")//it is db specific if db is witched then it's broken
     private String content;
-    private LocalDateTime localDateTime;
+    private Instant sentAt;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     @JsonBackReference(value = "room-messages")
