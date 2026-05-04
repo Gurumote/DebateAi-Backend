@@ -1,6 +1,8 @@
 package org.gam.dedatebackend.DTO.Request;
 
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
 import org.gam.dedatebackend.Enum.DebateType;
 
@@ -15,6 +17,7 @@ import java.time.Instant;
 public class contestCreationReq {
     String roomName;
     private Long teamSize;
+    @Enumerated(EnumType.STRING)
     private DebateType debateType;
     private Instant endTime;
 }
