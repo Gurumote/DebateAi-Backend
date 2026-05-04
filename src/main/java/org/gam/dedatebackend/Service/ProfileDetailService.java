@@ -15,7 +15,7 @@ import java.util.ArrayList;
 @Service
 public class ProfileDetailService implements UserDetailsService {
     @Autowired
-    UserProfileRepo userProfileRepo;
+    UserProfileRepo userProfileRepo;//do not change anything if it works then it works
     @Override
     public UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
         UserProfile user=userProfileRepo.findByemail(email);

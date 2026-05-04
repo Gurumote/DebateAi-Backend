@@ -1,7 +1,7 @@
 package org.gam.dedatebackend.Service;
 
-import org.gam.dedatebackend.Model.Request.ProfileRequest;
-import org.gam.dedatebackend.Model.ProfileResponse;
+import org.gam.dedatebackend.DTO.Request.ProfileRequest;
+import org.gam.dedatebackend.DTO.Response.ProfileResponse;
 
 public interface ProfileService {
     public ProfileResponse createProfile(ProfileRequest profileRequest);

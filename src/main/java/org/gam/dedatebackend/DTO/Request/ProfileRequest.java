@@ -1,4 +1,4 @@
-package org.gam.dedatebackend.Model.Request;
+package org.gam.dedatebackend.DTO.Request;
 
 
 import lombok.AllArgsConstructor;
