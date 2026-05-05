@@ -1,5 +1,6 @@
 package org.gam.dedatebackend.Controller;
 
+import livekit.LivekitModels;
 import lombok.RequiredArgsConstructor;
 import org.gam.dedatebackend.DTO.Request.MessageRequest;
 import org.gam.dedatebackend.DTO.Request.contestCreationReq;
@@ -15,6 +16,7 @@ import org.gam.dedatebackend.Service.ContestRoomService;
 import org.gam.dedatebackend.Service.livekitService;
 import org.gam.dedatebackend.Service.participantService;
 import org.gam.dedatebackend.Util.LiveKitUtil;
+import org.gam.dedatebackend.userDefinedExecption.LiveKitException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -44,8 +46,8 @@ public class ContestRoomController {
     public String createRoom(@RequestBody contestCreationReq contestCreationReq, Authentication authentication){
         return contestRoomService.createRoom(contestCreationReq, authentication);
     }
-        @PostMapping("/{roomId}/activateRoom")
-        public ResponseEntity<String> activateRoom(@PathVariable String roomId,Authentication authentication){
+    @PostMapping("/{roomId}/activateRoom")
+    public ResponseEntity<String> activateRoom(@PathVariable String roomId,Authentication authentication){
             ContestRoom room=contestRepo.findById(roomId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
             UserProfile profile=getUser(authentication);
             if(profile.getId()!=room.getHost().getId()){
@@ -70,7 +72,7 @@ public class ContestRoomController {
     @PostMapping("/{roomId}/token")
     public ResponseEntity<String> getToken(@PathVariable String roomId, Authentication authentication,@RequestParam Team team) {
         UserProfile user =getUser(authentication);
-        String userName=user.getUsername();
+        long userName=user.getId();
         ContestRoom room = contestRepo.findById(roomId).orElseThrow(() -> new RuntimeException("Room not found"));
         if(room.getSetLiveAt()==null){
             if(room.getHost().getId()==user.getId()){
@@ -78,8 +80,8 @@ public class ContestRoomController {
                 livekitService.createLiveKitRoom(room);
                 room.setCurrentParticipantsSize(1);
                 contestRepo.save(room);
+                String token = liveKitUtil.generateToken(room,  String.valueOf(userName),Team.HOST);
                 RoomParticipant roomParticipant=participantService.addParticipant(room,authentication,Team.HOST);
-                String token = liveKitUtil.generateToken(room, userName,Team.HOST);
                 return ResponseEntity.ok(token);
             }else{
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room is not Started yet");
@@ -113,9 +115,10 @@ public class ContestRoomController {
         Instant endTime=room.getEndTime();
         Instant time=Instant.now();
         if (endTime.isAfter(time)) {
-            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_IdAndLeftAtIsNull(room.getId(), user.getId());
+            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_Id(room.getId(), user.getId());
+            String token = liveKitUtil.generateToken(room, String.valueOf(userName), finalTeam);
             if (alreadyActive) {
-                RoomParticipant participant=participantRepo.findByUser_Id(user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+                RoomParticipant participant=participantRepo.findByContestRoom_IdAndUser_Id(roomId,user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
                 participant.setJoinedAt(Instant.now());
                 participant.setLeftAt(null);
                 participant.setTeam(finalTeam);
@@ -123,10 +126,14 @@ public class ContestRoomController {
             }else{
                 participantService.addParticipant(room, authentication, finalTeam);
             }
-            String token = liveKitUtil.generateToken(room, userName, finalTeam);
             return ResponseEntity.ok(token);
         }else{
-            livekitService.deleteRoom(room,authentication);
+            List<RoomParticipant> remaining =participantRepo.findByContestRoom_IdAndLeftAtIsNull(roomId);
+            if(!remaining.isEmpty()){
+                throw new LiveKitException("Room is Still Active");
+            }else {
+                livekitService.deleteRoom(room, authentication);
+            }
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Room has already ended");
     }
@@ -145,9 +152,10 @@ public class ContestRoomController {
         Instant endTime=room.getEndTime();
         Instant time=Instant.now();
         if (endTime.isAfter(time)) {
-            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_IdAndLeftAtIsNull(room.getId(), user.getId());
+            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_Id(room.getId(), user.getId());
+            String token = liveKitUtil.generateTokenForAudience(room, userName,Team.AUDIENCE);
             if (alreadyActive) {
-                RoomParticipant participant=participantRepo.findByUser_Id(user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+                RoomParticipant participant=participantRepo.findByContestRoom_IdAndUser_Id(roomId,user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
                 participant.setJoinedAt(Instant.now());
                 participant.setLeftAt(null);
                 participant.setTeam(Team.AUDIENCE);
@@ -155,10 +163,14 @@ public class ContestRoomController {
             }else{
                 participantService.addParticipant(room, authentication, Team.AUDIENCE);
             }
-            String token = liveKitUtil.generateTokenForAudience(room, userName,Team.AUDIENCE);
             return ResponseEntity.ok(token);
         }else{
-            livekitService.deleteRoom(room,authentication);
+            List<RoomParticipant> remaining =participantRepo.findByContestRoom_IdAndLeftAtIsNull(roomId);
+            if(!remaining.isEmpty()){
+                throw new LiveKitException("Room is Still Active");
+            }else {
+                livekitService.deleteRoom(room, authentication);
+            }
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Room has already ended");
     }
@@ -221,6 +233,15 @@ public class ContestRoomController {
         contestRepo.save(room);
         return ResponseEntity.ok("Left room successfully");
     }
+    @PostMapping("/allParticiapnt")
+    public List<LivekitModels.ParticipantInfo> getAllParticipants(String roomId){
+     return livekitService.listOfParticipants(roomId);
+    }
+//    @PostMapping("/{roomId}/mute")
+//    public ResponseEntity<String> muteRoom(@PathVariable String roomId, String participantId,Authentication authentication) throws IOException {
+////        RoomParticipant roomParticipant=RoomParticipantRepo.
+//        return livekitService.muteRoom(roomId,participantId,authentication);
+//    }
     private UserProfile getUser(Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No authentication");
