@@ -19,4 +19,17 @@ AND r.endTime > CURRENT_TIMESTAMP
     List<ContestRoom> findInitializedOrLiveRooms();
 
     List<ContestRoom> findByRoomStatusAndHost_Id(roomStatus status, Long hostId);
+    @Query("""
+    SELECT DISTINCT r
+    FROM ContestRoom r
+    LEFT JOIN r.participants p
+    WHERE r.host.id = :userId
+       OR (
+            p.user.id = :userId
+            AND p.team <> org.gam.dedatebackend.Enum.Team.AUDIENCE
+          )
+""")
+    List<ContestRoom> findRoomsWhereUserIsHostOrTeam(
+            @Param("userId") Long userId
+    );
 }
