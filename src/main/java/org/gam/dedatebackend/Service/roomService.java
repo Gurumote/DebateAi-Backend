@@ -57,7 +57,7 @@ public class roomService {
                 .createdAt(Instant.now())
                 .endTime(contestCreationReq.getEndTime())
                 .roomStatus(roomStatus.INITIALIZED)
-                .currentParticipantsSize(0L)
+                .currentParticipantsSize(0)
                 .debateType(contestCreationReq.getDebateType())
                 .list(new ArrayList<>())
                 .participants(new ArrayList<>())

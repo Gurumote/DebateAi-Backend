@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ProfileResponse {
-
     private String userid;
     private String username;
     private String Email;
