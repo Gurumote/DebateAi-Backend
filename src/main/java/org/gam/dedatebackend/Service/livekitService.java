@@ -5,19 +5,26 @@ import livekit.LivekitModels;
 import lombok.RequiredArgsConstructor;
 import org.gam.dedatebackend.DTO.Request.MessageRequest;
 import org.gam.dedatebackend.Enum.roomStatus;
+import org.gam.dedatebackend.Model.Contest.Participant.RoomParticipant;
 import org.gam.dedatebackend.Model.Contest.Room.ContestRoom;
 import org.gam.dedatebackend.Model.Contest.RoomMessages.MessagesOfRoom;
 import org.gam.dedatebackend.Model.UserProfile;
 import org.gam.dedatebackend.Repo.ContestRepo;
+import org.gam.dedatebackend.Repo.RoomParticipantRepo;
 import org.gam.dedatebackend.Repo.UserProfileRepo;
 import org.gam.dedatebackend.userDefinedExecption.LiveKitException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import retrofit2.Call;
 import retrofit2.Response;
 import tools.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+
+import static io.micrometer.core.instrument.config.NamingConvention.identity;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +34,7 @@ public class livekitService {
     private final UserProfileRepo userProfileRepo;
     private final ContestRepo contestRepo;
     private final messageService messageService;
+    private final RoomParticipantRepo participantRepo;
     public void createLiveKitRoom(ContestRoom contestRoom){
         if (contestRoom == null || contestRoom.getId() == null || contestRoom.getId().isBlank()) {
             throw new IllegalArgumentException("Invalid contest room");
@@ -59,6 +67,7 @@ public class livekitService {
         long hostUserID = userProfile.getId();
         ContestRoom room=contestRepo.findById(roomId).orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
         long hostId=room.getHost().getId();
+        UserProfile p1 = userProfileRepo.findById(Long.valueOf(participantId)).orElseThrow(() -> new RuntimeException("Participant not found: " + participantId));
         if(hostId!=hostUserID){
             System.out.println("You don't have access to remove Participant from the room");
         }else{
@@ -83,6 +92,20 @@ public class livekitService {
         long hostId=room.getHost().getId();
         if(hostId!=hostUserID){
             throw new LiveKitException("You don't have access to delete room");
+        }else{
+            try{
+                roomServiceClient.deleteRoom(roomId);
+                room.setEndTime(Instant.now());
+                room.setRoomStatus(roomStatus.DEAD);
+                contestRepo.save(room);
+            }catch (LiveKitException e){
+                throw new LiveKitException("Failed to delete room");
+            }
+        }
+        Instant endTime=room.getEndTime();
+        Instant time=Instant.now();
+        if(endTime.isBefore(time)){
+            throw new LiveKitException("Room is Still Active and U don't Have Access to Delete Room");
         }else{
             try{
                 roomServiceClient.deleteRoom(roomId);
@@ -128,7 +151,22 @@ public class livekitService {
             throw new RuntimeException(e);
         }
     }
+    public List<LivekitModels.ParticipantInfo> listOfParticipants(String roomId){
+        try{
+            Call<List<LivekitModels.ParticipantInfo>> call =
+                    roomServiceClient.listParticipants(roomId);
+            Response<List<LivekitModels.ParticipantInfo>> response = call.execute();
 
+            if (!response.isSuccessful()) {
+                throw new RuntimeException("Failed: " + response.code());
+            }
+            return response.body();
+        }catch (LiveKitException e){
+            throw new LiveKitException("Failed to list participants");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
     public void checkRooms() {
         try {
             // 1. You MUST call .execute() to actually send the request to LiveKit Cloud
@@ -155,6 +193,39 @@ public class livekitService {
             System.err.println("Network error while checking rooms: " + e.getMessage());
         }
     }
+
+
+//    public ResponseEntity<String> muteRoom(String roomId, String participantId, Authentication authentication) throws IOException {
+//        UserProfile userProfile = getUserProfile(authentication);
+//        RoomParticipant participant=
+//        String identity="";
+//        ContestRoom room=contestRepo.findById(roomId).orElseThrow(() -> new LiveKitException("Room not found"));
+//        if(room.getHost().getId()!=userProfile.getId()){
+//            throw new LiveKitException("You are not able to mute room");
+//        }
+//        List<LivekitModels.ParticipantInfo> participants =
+//                roomServiceClient.listParticipants(roomId)
+//                        .execute()
+//                        .body();
+//
+//        LivekitModels.ParticipantInfo participant = participants.stream()
+//                .filter(p -> p.getIdentity().equals(identity))
+//                .findFirst()
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//        LivekitModels.TrackInfo audioTrack = participant.getTracksList().stream()
+//                .filter(t -> t.getType().name().equals("AUDIO"))
+//                .findFirst()
+//                .orElseThrow(() -> new RuntimeException("Audio track not found"));
+//
+//        roomServiceClient.mutePublishedTrack(
+//                roomId,
+//                participantId,
+//                audioTrack.getSid(),
+//                true
+//        ).execute();
+//        return  ResponseEntity.ok().build();
+//    }
     public UserProfile getUserProfile(Authentication authentication){
         String email=authentication.getName();
         return userProfileRepo.findByEmail(email)
