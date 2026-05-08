@@ -50,11 +50,12 @@ public class ContestRoomController {
     public ResponseEntity<String> activateRoom(@PathVariable String roomId,Authentication authentication){
             ContestRoom room=contestRepo.findById(roomId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
             UserProfile profile=getUser(authentication);
+            long userName=profile.getId();
             if(profile.getId()!=room.getHost().getId()){
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN);
             }
             if (room.getRoomStatus() != roomStatus.INITIALIZED) {
-                return ResponseEntity.badRequest().body("Room cannot be activated");
+                return ResponseEntity.badRequest().body("Room is already initialized or it can be active");
             }
             if(room.getSetLiveAt()!=null){
                 return ResponseEntity.ok("Room already activated");
@@ -64,10 +65,12 @@ public class ContestRoomController {
                 room.setSetLiveAt(Instant.now());
                 room.setRoomStatus(roomStatus.LIVE);
                 contestRepo.save(room);
+                String token = liveKitUtil.generateToken(room,  String.valueOf(userName),Team.HOST);
+                RoomParticipant roomParticipant=participantService.addParticipant(room,authentication,Team.HOST);
+                return ResponseEntity.ok(token);
             } catch (Exception e) {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "LiveKit failed");
             }
-            return ResponseEntity.ok("Room activated");
         }
     @PostMapping("/{roomId}/token")
     public ResponseEntity<String> getToken(@PathVariable String roomId, Authentication authentication,@RequestParam Team team) {
@@ -78,7 +81,8 @@ public class ContestRoomController {
             if(room.getHost().getId()==user.getId()){
                 room.setSetLiveAt(Instant.now());
                 livekitService.createLiveKitRoom(room);
-                room.setCurrentParticipantsSize(1);
+                long liveNumberOfParticipant=room.getCurrentParticipantsSize();
+                room.setCurrentParticipantsSize(liveNumberOfParticipant+ 1);
                 contestRepo.save(room);
                 String token = liveKitUtil.generateToken(room,  String.valueOf(userName),Team.HOST);
                 RoomParticipant roomParticipant=participantService.addParticipant(room,authentication,Team.HOST);
@@ -152,27 +156,11 @@ public class ContestRoomController {
         Instant endTime=room.getEndTime();
         Instant time=Instant.now();
         if (endTime.isAfter(time)) {
-            boolean alreadyActive = participantRepo.existsByContestRoom_IdAndUser_Id(room.getId(), user.getId());
             String token = liveKitUtil.generateTokenForAudience(room, userName,Team.AUDIENCE);
-            if (alreadyActive) {
-                RoomParticipant participant=participantRepo.findByContestRoom_IdAndUser_Id(roomId,user.getId()).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
-                participant.setJoinedAt(Instant.now());
-                participant.setLeftAt(null);
-                participant.setTeam(Team.AUDIENCE);
-                participantRepo.save(participant);
-            }else{
-                participantService.addParticipant(room, authentication, Team.AUDIENCE);
-            }
             return ResponseEntity.ok(token);
         }else{
-            List<RoomParticipant> remaining =participantRepo.findByContestRoom_IdAndLeftAtIsNull(roomId);
-            if(!remaining.isEmpty()){
-                throw new LiveKitException("Room is Still Active");
-            }else {
-                livekitService.deleteRoom(room, authentication);
-            }
+            throw new LiveKitException("Room is Ended");
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Room has already ended");
     }
     @PostMapping("{roomId}/{participantId}/removeParticipant")
     public ResponseEntity<String> removeParticipant(@PathVariable String roomId,@PathVariable String participantId, Authentication authentication) {
@@ -221,6 +209,7 @@ public class ContestRoomController {
             List<RoomParticipant> remaining =participantRepo.findByContestRoom_IdAndLeftAtIsNull(roomId);
             if (remaining.isEmpty()) {
                 room.setEndTime(Instant.now());
+                room.setRoomStatus(roomStatus.DEAD);
                 contestRepo.save(room);
                 return ResponseEntity.ok("Room ended (no participants left)");
             } else {
