@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @EnableJpaRepositories
 public interface RoomParticipantRepo extends JpaRepository<RoomParticipant,Long> {
-    Boolean existsByContestRoom_IdAndUser_IdAndLeftAtIsNull(String roomId, Long userId);
+    Boolean existsByContestRoom_IdAndUser_Id(String roomId, Long userId);
 
     Optional<RoomParticipant> findTopByContestRoom_IdAndUser_IdAndLeftAtIsNullOrderByJoinedAtDesc(
             String roomId,
@@ -24,7 +24,8 @@ public interface RoomParticipantRepo extends JpaRepository<RoomParticipant,Long>
     List<RoomParticipant> findByContestRoom_IdAndLeftAtIsNull(String roomId);
 
     List<RoomParticipant> findByUserAndContestRoom(UserProfile user, ContestRoom contestRoom);
-    Optional<RoomParticipant> findByUser_Id(Long userId);
+    Optional<RoomParticipant> findTopByUser_IdOrderByJoinedAtDesc(Long userId);
     List<RoomParticipant> findByContestRoom(ContestRoom contestRoom);
     long countByContestRoomAndTeam(ContestRoom room, Team team);
+    Optional<RoomParticipant> findByContestRoom_IdAndUser_Id(String roomId, Long userId);
 }

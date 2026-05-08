@@ -22,8 +22,7 @@ public class participantService {
     private final ContestRepo contestRepo;
     public RoomParticipant addParticipant(ContestRoom contestRoom,Authentication authentication,Team team) {
         UserProfile user=getUser(authentication);
-        long liveNumberOfParticipant=contestRoom.getCurrentParticipantsSize();
-        contestRoom.setCurrentParticipantsSize( liveNumberOfParticipant+ 1);
+        contestRoom.setCurrentParticipantsSize(contestRoom.getCurrentParticipantsSize()+ 1);
         contestRepo.save(contestRoom);
         RoomParticipant newParticipant= RoomParticipant.builder()
                 .user(user)
